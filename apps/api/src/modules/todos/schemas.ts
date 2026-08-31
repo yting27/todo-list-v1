@@ -61,6 +61,13 @@ export const listQuerySchema = z
     dueFrom: z.iso.datetime({ offset: true }).optional(),
     dueTo: z.iso.datetime({ offset: true }).optional(),
     dependencyState: z.enum(["blocked", "unblocked"]).optional(),
+    search: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .optional()
+      .transform((value) => (value ? value : undefined)),
     sort: listSortSchema.default("dueAt"),
     direction: listDirectionSchema.default("asc"),
     limit: z.coerce.number().int().min(1).max(100).default(50),

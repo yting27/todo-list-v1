@@ -44,7 +44,7 @@ export function CreateTodoDialog({
       <DialogTrigger asChild>
         <Button
           disabled={disabled}
-          className="fixed bottom-6 right-6 z-20 size-14 rounded-full shadow-lg sm:static sm:size-auto sm:rounded-md"
+          className="fixed bottom-6 right-6 size-14 rounded-full shadow-lg sm:static sm:size-auto sm:rounded-full sm:px-4"
         >
           <Plus />
           <span className="hidden sm:inline">New TODO</span>

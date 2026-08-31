@@ -51,6 +51,12 @@ export async function listTodos(
     conditions.push(`t.due_at >= ${add(input.dueFrom)}::timestamptz`);
   if (input.dueTo)
     conditions.push(`t.due_at < ${add(input.dueTo)}::timestamptz`);
+  if (input.search) {
+    const escaped = input.search.replace(/[\\%_]/g, (char) => `\\${char}`);
+    conditions.push(
+      `(t.name ILIKE ${add(`%${escaped}%`)} ESCAPE '\\' OR t.description ILIKE ${add(`%${escaped}%`)} ESCAPE '\\')`,
+    );
+  }
   if (input.dependencyState) {
     const exists = `EXISTS (
       SELECT 1 FROM todo_dependencies ftd JOIN todos fd ON fd.id = ftd.depends_on_id

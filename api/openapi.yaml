@@ -254,6 +254,12 @@ paths:
             schema: { type: string, enum: [blocked, unblocked] },
           }
         - {
+            name: search,
+            in: query,
+            description: Case-insensitive substring match on name or description,
+            schema: { type: string, maxLength: 200 },
+          }
+        - {
             name: sort,
             in: query,
             schema:

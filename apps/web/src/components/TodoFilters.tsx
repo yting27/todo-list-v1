@@ -1,5 +1,5 @@
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
-import { Filter, RotateCcw } from "lucide-react";
+import { ArrowUpDown, Filter, RotateCcw } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
@@ -171,7 +171,8 @@ export function TodoFilters({ timezone }: { timezone: string }) {
         value={params.get("sort") ?? "dueAt"}
         onValueChange={(value) => change("sort", value)}
       >
-        <SelectTrigger size="sm" className="w-36">
+        <SelectTrigger size="sm" className="w-40" aria-label="Sort field">
+          <ArrowUpDown className="size-3.5 text-muted-foreground" />
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -185,7 +186,7 @@ export function TodoFilters({ timezone }: { timezone: string }) {
         value={params.get("direction") ?? "asc"}
         onValueChange={(value) => change("direction", value)}
       >
-        <SelectTrigger size="sm" className="w-32">
+        <SelectTrigger size="sm" className="w-36" aria-label="Sort direction">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

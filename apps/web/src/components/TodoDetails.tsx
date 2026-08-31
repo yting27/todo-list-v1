@@ -329,8 +329,8 @@ export function TodoDetails({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this TODO?</AlertDialogTitle>
             <AlertDialogDescription>
-              It disappears from the workspace, but the database retains its
-              history. A prerequisite used by active TODOs cannot be deleted.
+              This will remove it from the workspace. You can&apos;t undo this
+              action.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
