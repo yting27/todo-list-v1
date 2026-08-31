@@ -1,0 +1,45 @@
+{
+  "name": "sleekflow-todo-list",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-shaped collaborative TODO application",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "overrides": {
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "scripts": {
+    "build": "npm run build -w @todo/contracts && npm run build -w @todo/api && npm run build -w @todo/web",
+    "clean": "npm run clean --workspaces --if-present",
+    "dev": "concurrently -n api,web -c blue,magenta \"npm run dev -w @todo/api\" \"npm run dev -w @todo/web\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "generate": "npm run generate -w @todo/contracts",
+    "generate:check": "npm run generate && git diff --exit-code -- packages/contracts/src/generated.ts",
+    "lint": "eslint .",
+    "migrate": "npm run migrate -w @todo/api",
+    "migrate:down": "npm run migrate:down -w @todo/api",
+    "seed": "npm run seed -w @todo/api",
+    "start": "npm run start -w @todo/api",
+    "test": "npm run test -w @todo/contracts && npm run test -w @todo/api && npm run test -w @todo/web",
+    "test:integration": "npm run test:integration -w @todo/api",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.35.0",
+    "concurrently": "^9.2.1",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "typescript-eslint": "^8.42.0"
+  }
+}
