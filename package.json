@@ -12,7 +12,8 @@
   ],
   "overrides": {
     "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react-dom": "19.2.7",
+    "vite": "^8.1.0"
   },
   "scripts": {
     "build": "npm run build -w @todo/contracts && npm run build -w @todo/api && npm run build -w @todo/web",

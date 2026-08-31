@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
 import { z } from "zod";
 
 const booleanFromString = z
@@ -13,7 +16,7 @@ const schema = z.object({
   DATABASE_URL: z
     .string()
     .url()
-    .default("postgres://todo:todo_local_password@127.0.0.1:5432/todo"),
+    .default("postgres://user0:todo_local_usr_password@127.0.0.1:5432/todo"),
   REDIS_URL: z.string().url().default("redis://127.0.0.1:6379"),
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])

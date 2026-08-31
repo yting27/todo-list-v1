@@ -1,4 +1,4 @@
-# SleekFlow TODO
+# SleekFlow TODO List System
 
 A production-shaped modular monolith for a shared TODO workspace. It implements the required CRUD, recurrence, dependencies, filtering/sorting, concurrent access, retained deletion, and 10,000-item behavior, plus authentication and real-time refresh.
 
@@ -10,7 +10,7 @@ Docker Desktop is the only required runtime:
 make dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Register a user, or load the repeat-safe performance fixture in another terminal:
+Open [http://localhost:3000](http://localhost:3000) to access TODO List Web App. Register a user, or load the repeat-safe performance fixture in another terminal:
 
 ```bash
 make seed
