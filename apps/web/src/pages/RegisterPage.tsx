@@ -13,12 +13,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
+import { describeApiError } from "@/lib/errors";
 import { AuthLayout } from "./AuthLayout";
 
 export function RegisterPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  // Pre-fill the workspace timezone with the browser's, so deadlines are local by default.
   const localTimezone =
     Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const [form, setForm] = useState({
@@ -31,10 +33,12 @@ export function RegisterPage() {
   const mutation = useMutation({
     mutationFn: api.register,
     onSuccess: async (data) => {
+      // Cache the session so the app renders authenticated state immediately.
       queryClient.setQueryData(["session"], data);
       await navigate("/");
     },
   });
+  // Returns an onChange handler that updates a single field, keeping the rest intact.
   function field(name: keyof typeof form) {
     return (event: React.ChangeEvent<HTMLInputElement>) =>
       setForm((current) => ({ ...current, [name]: event.target.value }));
@@ -43,12 +47,10 @@ export function RegisterPage() {
     event.preventDefault();
     mutation.mutate(form);
   }
-  const error =
-    mutation.error instanceof ApiError
-      ? mutation.error.problem.detail
-      : mutation.error
-        ? "Registration failed."
-        : null;
+  // Map any API error to a user-friendly message.
+  const error = mutation.error
+    ? describeApiError(mutation.error, "Registration failed.")
+    : null;
 
   return (
     <AuthLayout>

@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, ApiError } from "@/lib/api";
+import { describeApiError } from "@/lib/errors";
 import type { AffectedTodo, Todo, TodoUpdate } from "@/lib/types";
 import { TodoForm } from "./TodoForm";
 
@@ -110,8 +111,7 @@ export function TodoDetails({
           draft: variables.draft,
           affected: error.problem.affectedTodos ?? [],
         });
-      } else
-        toast.error(error instanceof Error ? error.message : "Update failed.");
+      } else toast.error(describeApiError(error, "Could not update TODO."));
     },
   });
   const remove = useMutation({
@@ -121,10 +121,10 @@ export function TodoDetails({
       await invalidate();
       setDeleteOpen(false);
       onClose();
-      toast.success("TODO deleted. Its history is retained.");
+      toast.success("TODO deleted.");
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "Delete failed."),
+      toast.error(describeApiError(error, "Could not delete TODO.")),
   });
   const addDependency = useMutation({
     mutationFn: ({ todo, dependsOnId }: { todo: Todo; dependsOnId: string }) =>
@@ -135,9 +135,7 @@ export function TodoDetails({
       toast.success("Prerequisite added.");
     },
     onError: (error) =>
-      toast.error(
-        error instanceof Error ? error.message : "Could not add prerequisite.",
-      ),
+      toast.error(describeApiError(error, "Could not add prerequisite.")),
   });
   const removeDependency = useMutation({
     mutationFn: ({ todo, dependsOnId }: { todo: Todo; dependsOnId: string }) =>
@@ -147,11 +145,7 @@ export function TodoDetails({
       toast.success("Prerequisite removed.");
     },
     onError: (error) =>
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Could not remove prerequisite.",
-      ),
+      toast.error(describeApiError(error, "Could not remove prerequisite.")),
   });
   useEffect(() => {
     if (!todoId) {
@@ -203,7 +197,7 @@ export function TodoDetails({
             ) : null}
             {detail.error ? (
               <p role="alert" className="text-sm text-destructive">
-                {detail.error.message}
+                {describeApiError(detail.error, "Could not load TODO details.")}
               </p>
             ) : null}
             {detail.data ? (

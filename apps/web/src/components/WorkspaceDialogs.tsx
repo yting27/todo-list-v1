@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
+import { describeApiError } from "@/lib/errors";
 import type { Workspace } from "@/lib/types";
 
 export function CreateWorkspaceDialog({
@@ -43,7 +44,8 @@ export function CreateWorkspaceDialog({
       setOpen(false);
       toast.success("Workspace created.");
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) =>
+      toast.error(describeApiError(error, "Could not create workspace.")),
   });
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -122,7 +124,8 @@ export function MembersDialog({ workspace }: { workspace: Workspace }) {
       });
       toast.success("Member added.");
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) =>
+      toast.error(describeApiError(error, "Could not add member.")),
   });
   function submit(event: FormEvent) {
     event.preventDefault();

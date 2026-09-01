@@ -4,6 +4,7 @@ COPY package.json package-lock.json tsconfig.base.json ./
 COPY packages/contracts/package.json packages/contracts/tsconfig.json ./packages/contracts/
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/web/package.json apps/web/tsconfig.json apps/web/tsconfig.app.json apps/web/tsconfig.node.json ./apps/web/
+# npm ci: clean install of exactly what package-lock.json records.
 RUN npm ci --workspace @todo/contracts --workspace @todo/web
 COPY packages/contracts ./packages/contracts
 COPY api ./api

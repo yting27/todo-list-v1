@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspaceEvents } from "@/hooks/useWorkspaceEvents";
 import { api } from "@/lib/api";
+import { describeApiError } from "@/lib/errors";
 import type { AuthResponse } from "@/lib/types";
 
 const listParameters = new Set([
@@ -31,12 +32,17 @@ const listParameters = new Set([
   "cursor",
 ]);
 
+/**
+ * Main workspace view: shows the TODO board for the active workspace.
+ * `session` carries the authenticated user and their accessible workspaces.
+ */
 export function WorkspacePage({ session }: { session: AuthResponse }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const [deleteRequestedId, setDeleteRequestedId] = useState<string | null>(
     null,
   );
+  // Restore the last-used workspace, falling back to the first accessible one.
   const storedWorkspace = window.localStorage.getItem("active-workspace");
   const initialWorkspace = session.workspaces.some(
     (workspace) => workspace.id === storedWorkspace,
@@ -47,6 +53,7 @@ export function WorkspacePage({ session }: { session: AuthResponse }) {
   const workspace =
     session.workspaces.find((item) => item.id === workspaceId) ??
     session.workspaces[0];
+  // Build the TODO list query from the subset of URL params we support as filters.
   const apiQuery = useMemo(() => {
     const query = new URLSearchParams();
     for (const [key, value] of searchParams)
@@ -60,7 +67,9 @@ export function WorkspacePage({ session }: { session: AuthResponse }) {
     placeholderData: (previous) => previous,
   });
   useWorkspaceEvents(workspace?.id);
+
   useEffect(() => {
+    // Persist the active workspace and clear any open TODO on switch.
     if (workspace?.id)
       window.localStorage.setItem("active-workspace", workspace.id);
     setSelectedTodoId(null);
@@ -83,6 +92,7 @@ export function WorkspacePage({ session }: { session: AuthResponse }) {
     );
   }
   const canEdit = workspace.role !== "viewer";
+  // Switch workspaces and reset any list filters/pagination.
   function selectWorkspace(value: string) {
     setWorkspaceId(value);
     setSearchParams(new URLSearchParams(), { replace: true });
@@ -125,7 +135,7 @@ export function WorkspacePage({ session }: { session: AuthResponse }) {
           <WifiOff className="mx-auto mb-3 size-7 text-destructive" />
           <p className="font-medium">Could not load TODOs</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {todos.error.message}
+            {describeApiError(todos.error, "Please try again.")}
           </p>
           <Button
             className="mt-4"

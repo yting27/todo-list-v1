@@ -39,7 +39,7 @@ await inTransaction(pool, async (client) => {
        CASE WHEN n % 4 = 2 THEN clock_timestamp() ELSE NULL END,
        $2,
        $2
-     FROM generate_series(1, 10000) AS n
+     FROM generate_series(1, 100) AS n
      ON CONFLICT (id) DO NOTHING`,
     [workspaceId, userId],
   );

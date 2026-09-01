@@ -7,6 +7,8 @@ import { api, ApiError } from "@/lib/api";
 import { LoginPage } from "@/pages/LoginPage";
 import { RegisterPage } from "@/pages/RegisterPage";
 
+// Code-split the workspace page into its own chunk to keep the initial bundle
+// small; remap named export to `default` for lazy().
 const WorkspacePage = lazy(() =>
   import("@/pages/WorkspacePage").then((module) => ({
     default: module.WorkspacePage,

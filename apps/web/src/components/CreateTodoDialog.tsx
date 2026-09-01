@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { api } from "@/lib/api";
+import { describeApiError } from "@/lib/errors";
 import type { Todo, TodoInput } from "@/lib/types";
 import { TodoForm } from "./TodoForm";
 
@@ -37,7 +38,7 @@ export function CreateTodoDialog({
       toast.success("TODO created.");
     },
     onError: (error) =>
-      toast.error(error instanceof Error ? error.message : "Create failed."),
+      toast.error(describeApiError(error, "Could not create TODO.")),
   });
   return (
     <Dialog open={open} onOpenChange={setOpen}>

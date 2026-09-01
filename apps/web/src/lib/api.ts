@@ -36,6 +36,13 @@ function rememberCsrf(body: unknown) {
   }
 }
 
+/**
+ * Core fetch wrapper for the `/api/v1` endpoints: sets JSON/CSRF headers,
+ * sends session cookies, and throws `ApiError` (RFC 9457 problem details)
+ * on non-2xx responses.
+ *
+ * @param T Type of the JSON response body to decode.
+ */
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   if (options.body) headers.set("Content-Type", "application/json");
@@ -68,12 +75,15 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
+  /** Returns the current authenticated user. */
   me: () => request<AuthResponse>("/auth/me"),
+  /** Logs in and starts an authenticated session. */
   login: (input: { email: string; password: string }) =>
     request<AuthResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  /** Registers a new account and workspace. */
   register: (input: {
     email: string;
     password: string;
@@ -85,18 +95,23 @@ export const api = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  /** Logs out and clears the stored CSRF token. */
   logout: async () => {
     await request<void>("/auth/logout", { method: "POST" });
     csrfToken = undefined;
   },
+  /** Lists workspaces the user belongs to. */
   listWorkspaces: () => request<{ items: Workspace[] }>("/workspaces"),
+  /** Creates a new workspace. */
   createWorkspace: (input: { name: string; timezone: string }) =>
     request<Workspace>("/workspaces", {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  /** Lists members of a workspace. */
   listMembers: (workspaceId: string) =>
     request<{ items: WorkspaceMember[] }>(`/workspaces/${workspaceId}/members`),
+  /** Adds a member to a workspace. */
   addMember: (
     workspaceId: string,
     input: { email: string; role: "editor" | "viewer" },
@@ -105,15 +120,19 @@ export const api = {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  /** Lists todos in a workspace using the given filters. */
   listTodos: (workspaceId: string, query: URLSearchParams) =>
     request<TodoList>(`/workspaces/${workspaceId}/todos?${query.toString()}`),
+  /** Fetches a single todo. */
   getTodo: (workspaceId: string, todoId: string) =>
     request<Todo>(`/workspaces/${workspaceId}/todos/${todoId}`),
+  /** Creates a new todo. */
   createTodo: (workspaceId: string, input: TodoInput) =>
     request<Todo>(`/workspaces/${workspaceId}/todos`, {
       method: "POST",
       body: JSON.stringify(input),
     }),
+  /** Updates a todo using optimistic concurrency via If-Match. */
   updateTodo: (
     workspaceId: string,
     todoId: string,
@@ -128,11 +147,13 @@ export const api = {
         body: JSON.stringify(input),
       },
     ),
+  /** Deletes a todo using optimistic concurrency via If-Match. */
   deleteTodo: (workspaceId: string, todoId: string, version: number) =>
     request<void>(`/workspaces/${workspaceId}/todos/${todoId}`, {
       method: "DELETE",
       headers: { "If-Match": `"${version}"` },
     }),
+  /** Adds a dependency on another todo. */
   addDependency: (
     workspaceId: string,
     todoId: string,
@@ -144,6 +165,7 @@ export const api = {
       headers: { "If-Match": `"${version}"` },
       body: JSON.stringify({ dependsOnId }),
     }),
+  /** Removes a dependency from a todo. */
   removeDependency: (
     workspaceId: string,
     todoId: string,

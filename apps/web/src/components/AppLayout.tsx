@@ -38,6 +38,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { api } from "@/lib/api";
+import { describeApiError } from "@/lib/errors";
 import type { AuthResponse, Workspace } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -165,7 +166,8 @@ function Topbar({
       queryClient.clear();
       window.location.assign("/login");
     },
-    onError: (error) => toast.error(error.message),
+    onError: (error) =>
+      toast.error(describeApiError(error, "Could not sign out.")),
   });
 
   return (

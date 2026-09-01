@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
+import { describeApiError } from "@/lib/errors";
 import { AuthLayout } from "./AuthLayout";
 
 export function LoginPage() {
@@ -24,6 +25,7 @@ export function LoginPage() {
   const mutation = useMutation({
     mutationFn: api.login,
     onSuccess: async (data) => {
+      // Cache the session so the app renders authenticated state immediately.
       queryClient.setQueryData(["session"], data);
       await navigate("/");
     },
@@ -34,12 +36,11 @@ export function LoginPage() {
     mutation.mutate({ email, password });
   }
 
-  const error =
-    mutation.error instanceof ApiError
-      ? mutation.error.problem.detail
-      : mutation.error
-        ? "Sign in failed."
-        : null;
+  // Map any API error to a user-friendly message.
+  const error = mutation.error
+    ? describeApiError(mutation.error, "Sign in failed.")
+    : null;
+
   return (
     <AuthLayout>
       <Card className="w-full max-w-md border-0 shadow-none sm:border sm:shadow-sm">
