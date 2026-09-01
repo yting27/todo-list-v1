@@ -13,6 +13,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Create a new user account with an initial workspace, then sign in immediately with a session cookie. */
         post: operations["register"];
         delete?: never;
         options?: never;
@@ -29,6 +30,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Authenticate with email and password, establishing a session cookie and returning a CSRF token. */
         post: operations["login"];
         delete?: never;
         options?: never;
@@ -45,6 +47,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Revoke the current session and clear the session cookie. */
         post: operations["logout"];
         delete?: never;
         options?: never;
@@ -59,6 +62,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description Return the authenticated user's profile, a fresh CSRF token, and their accessible workspaces. */
         get: operations["getCurrentUser"];
         put?: never;
         post?: never;
@@ -75,8 +79,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** @description List all workspaces the current user can access, including their role in each. */
         get: operations["listWorkspaces"];
         put?: never;
+        /** @description Create a new workspace with the current user as owner. */
         post: operations["createWorkspace"];
         delete?: never;
         options?: never;
@@ -99,6 +105,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
+        /** @description Update a workspace's name or timezone. Requires the owner role. */
         patch: operations["updateWorkspace"];
         trace?: never;
     };
@@ -111,8 +118,10 @@ export interface paths {
             };
             cookie?: never;
         };
+        /** @description List all members of a workspace with their roles. */
         get: operations["listWorkspaceMembers"];
         put?: never;
+        /** @description Add an existing user to a workspace as an editor or viewer. */
         post: operations["addWorkspaceMember"];
         delete?: never;
         options?: never;
@@ -133,9 +142,11 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
+        /** @description Remove a member from a workspace. The last owner cannot be removed. */
         delete: operations["removeWorkspaceMember"];
         options?: never;
         head?: never;
+        /** @description Change a workspace member's role between editor and viewer. */
         patch: operations["updateWorkspaceMember"];
         trace?: never;
     };
@@ -148,8 +159,10 @@ export interface paths {
             };
             cookie?: never;
         };
+        /** @description List TODOs in a workspace with filtering, sorting, and keyset pagination via cursor. */
         get: operations["listTodos"];
         put?: never;
+        /** @description Create a TODO in a workspace, optionally with recurrence and initial dependencies. */
         post: operations["createTodo"];
         delete?: never;
         options?: never;
@@ -167,12 +180,15 @@ export interface paths {
             };
             cookie?: never;
         };
+        /** @description Fetch a single TODO with its dependencies and current version (ETag). */
         get: operations["getTodo"];
         put?: never;
         post?: never;
+        /** @description Soft-delete a TODO with optimistic concurrency (If-Match). Fails if other TODOs depend on it. */
         delete: operations["deleteTodo"];
         options?: never;
         head?: never;
+        /** @description Update a TODO with optimistic concurrency (If-Match). Completing a recurring TODO generates the next occurrence in the series. */
         patch: operations["updateTodo"];
         trace?: never;
     };
@@ -188,6 +204,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** @description Make a TODO depend on another TODO. Rejects cycles and self-dependencies. */
         post: operations["addTodoDependency"];
         delete?: never;
         options?: never;
@@ -209,6 +226,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
+        /** @description Remove a dependency between two TODOs, unblocking the dependent TODO if applicable. */
         delete: operations["removeTodoDependency"];
         options?: never;
         head?: never;
@@ -224,6 +242,7 @@ export interface paths {
             };
             cookie?: never;
         };
+        /** @description Server-sent events stream of committed workspace changes (created, updated, deleted TODOs) for real-time updates. */
         get: operations["streamWorkspaceEvents"];
         put?: never;
         post?: never;
@@ -711,6 +730,8 @@ export interface operations {
                 dueFrom?: string;
                 dueTo?: string;
                 dependencyState?: "blocked" | "unblocked";
+                /** @description Case-insensitive substring match on name or description */
+                search?: string;
                 sort?: "dueAt" | "priority" | "status" | "name";
                 direction?: "asc" | "desc";
                 limit?: number;
