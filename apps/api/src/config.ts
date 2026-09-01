@@ -1,6 +1,3 @@
-import { existsSync, readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-
 import { z } from "zod";
 
 const booleanFromString = z

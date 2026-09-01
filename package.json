@@ -4,7 +4,7 @@
   "private": true,
   "description": "Production-shaped collaborative TODO application",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24.0.0"
   },
   "workspaces": [
     "packages/*",
