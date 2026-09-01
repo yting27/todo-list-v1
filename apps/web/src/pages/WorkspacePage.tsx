@@ -1,10 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  CheckSquare2,
-  ChevronLeft,
-  ChevronRight,
-  WifiOff,
-} from "lucide-react";
+import { CheckSquare2, ChevronLeft, ChevronRight, WifiOff } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 

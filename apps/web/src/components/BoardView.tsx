@@ -48,18 +48,14 @@ export function BoardView({
             key={column.status}
             className={cn(
               "flex min-h-40 flex-col gap-3 rounded-2xl p-3",
-              column.status === "Completed"
-                ? "bg-primary/10"
-                : "bg-muted/60",
+              column.status === "Completed" ? "bg-primary/10" : "bg-muted/60",
             )}
             aria-label={column.label}
           >
             <header
               className={cn(
                 "sticky top-17 z-10 -mx-3 -mt-3 px-4 pb-2 pt-3 backdrop-blur-md",
-                column.status === "Completed"
-                  ? "bg-primary/10"
-                  : "bg-muted/60",
+                column.status === "Completed" ? "bg-primary/10" : "bg-muted/60",
               )}
             >
               <div className="flex items-center gap-2">

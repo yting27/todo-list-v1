@@ -64,15 +64,15 @@ export function TodoCard({
               <MoreHorizontal className="size-4" />
             </Button>
           </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={onOpen}>
-                <Pencil /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onSelect={onDelete}>
-                <Trash2 /> Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onSelect={onOpen}>
+              <Pencil /> Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+              <Trash2 /> Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </CardHeader>
       <CardContent className="min-h-0 flex-1">
         <button

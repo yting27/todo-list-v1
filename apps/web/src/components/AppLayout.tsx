@@ -41,9 +41,7 @@ import { api } from "@/lib/api";
 import type { AuthResponse, Workspace } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const sidebarItems = [
-  { icon: SquareKanban, label: "Board", active: true },
-];
+const sidebarItems = [{ icon: SquareKanban, label: "Board", active: true }];
 
 function Sidebar({
   collapsed,
@@ -72,7 +70,7 @@ function Sidebar({
         ) : (
           <span className="flex items-center gap-2 text-lg font-bold tracking-tight">
             <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground">
-              <SquaresIntersect className="size-4"/>
+              <SquaresIntersect className="size-4" />
             </span>
             sleekflow
           </span>
@@ -144,7 +142,9 @@ function Topbar({
   onSelectWorkspace: (id: string) => void;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchTerm, setSearchTerm] = useState(searchParams.get("search") ?? "");
+  const [searchTerm, setSearchTerm] = useState(
+    searchParams.get("search") ?? "",
+  );
   const queryClient = useQueryClient();
 
   // Debounce: update the `search` URL param 1s after typing stops.
@@ -179,7 +179,8 @@ function Topbar({
             <SelectContent>
               {session.workspaces.map((item) => (
                 <SelectItem value={item.id} key={item.id}>
-                  {item.name}                </SelectItem>
+                  {item.name}{" "}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -207,7 +208,12 @@ function Topbar({
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="API documentation" asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="API documentation"
+                asChild
+              >
                 <a href="/api/docs" target="_blank" rel="noreferrer">
                   <CircleHelp className="size-4" />
                 </a>
@@ -215,7 +221,10 @@ function Topbar({
             </TooltipTrigger>
             <TooltipContent>API Documentation</TooltipContent>
           </Tooltip>
-          <Separator orientation="vertical" className="mx-1 hidden h-6 sm:block" />
+          <Separator
+            orientation="vertical"
+            className="mx-1 hidden h-6 sm:block"
+          />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
