@@ -33,6 +33,9 @@ interface SeriesRow {
   timezone: string;
 }
 
+const IN_PROGRESS_STATUS = statusCode("InProgress");
+const COMPLETED_STATUS = statusCode("Completed");
+
 async function insertOutbox(
   client: Queryable,
   eventType: "todo.created" | "todo.updated" | "todo.deleted",
@@ -81,6 +84,10 @@ async function lockTodo(
 
 function verifyVersion(todo: LockedTodo, expectedVersion: number) {
   if (todo.version !== expectedVersion) throw staleVersion();
+}
+
+function requiresCompletedPrerequisites(status: number) {
+  return status === IN_PROGRESS_STATUS || status === COMPLETED_STATUS;
 }
 
 export class TodoService {
@@ -140,11 +147,12 @@ export class TodoService {
         );
       }
 
+      const todoStatus = statusCode(input.status);
       await this.validateDependencies(
         client,
         workspaceId,
         input.dependencyIds,
-        input.status === "InProgress",
+        requiresCompletedPrerequisites(todoStatus),
       );
       const created = await client.query<LockedTodo>(
         `INSERT INTO todos
@@ -160,7 +168,7 @@ export class TodoService {
           input.name,
           input.description,
           input.dueAt,
-          statusCode(input.status),
+          todoStatus,
           priorityCode(input.priority),
           seriesId,
           seriesId ? 0 : null,
@@ -216,7 +224,7 @@ export class TodoService {
       const nextStatus =
         input.status === undefined ? current.status : statusCode(input.status);
 
-      if (nextStatus === 1) {
+      if (requiresCompletedPrerequisites(nextStatus)) {
         const blockers = await client.query(
           `SELECT 1 FROM todo_dependencies td JOIN todos d ON d.id = td.depends_on_id
            WHERE td.todo_id = $1 AND d.deleted_at IS NULL AND d.status <> 2 LIMIT 1`,
@@ -225,7 +233,7 @@ export class TodoService {
         if (blockers.rowCount)
           throw conflict(
             "todo_blocked",
-            "Complete all prerequisites before starting this TODO.",
+            "Complete all prerequisites before starting or completing this TODO.",
           );
       }
 
@@ -388,10 +396,13 @@ export class TodoService {
         );
       }
       verifyVersion(todo, expectedVersion);
-      if (todo.status === 1 && dependency.status !== 2) {
+      if (
+        requiresCompletedPrerequisites(todo.status) &&
+        dependency.status !== 2
+      ) {
         throw conflict(
-          "in_progress_would_be_blocked",
-          "An incomplete prerequisite cannot be added to an in-progress TODO.",
+          "incomplete_prerequisite",
+          "Only completed TODOs can be prerequisites for an in-progress or completed TODO.",
         );
       }
       const cycle = await client.query(
@@ -504,7 +515,7 @@ export class TodoService {
     if (mustBeComplete && result.rows.some((row) => row.status !== 2)) {
       throw conflict(
         "todo_blocked",
-        "An in-progress TODO cannot have incomplete prerequisites.",
+        "An in-progress or completed TODO cannot have incomplete prerequisites.",
       );
     }
   }

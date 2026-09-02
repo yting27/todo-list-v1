@@ -12,6 +12,7 @@ import {
   CreateWorkspaceDialog,
   MembersDialog,
 } from "@/components/WorkspaceDialogs";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorkspaceEvents } from "@/hooks/useWorkspaceEvents";
@@ -75,6 +76,7 @@ export function WorkspacePage({ session }: { session: AuthResponse }) {
     setSelectedTodoId(null);
   }, [workspace?.id]);
 
+  // No workspace accessible by user
   if (!workspace) {
     return (
       <main className="grid min-h-screen place-items-center p-6">
@@ -107,8 +109,12 @@ export function WorkspacePage({ session }: { session: AuthResponse }) {
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <TodoFilters timezone={workspace.timezone} />
-          <p className="hidden text-sm text-muted-foreground md:block">
-            {workspace.role} access · Deadlines in {workspace.timezone}
+          <p className="hidden items-center gap-1.5 text-sm text-muted-foreground md:flex">
+            <Badge variant="secondary" className="capitalize">
+              {workspace.role}
+            </Badge>
+            <span>access · Deadlines in</span>
+            <Badge variant="outline">{workspace.timezone}</Badge>
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -123,6 +129,7 @@ export function WorkspacePage({ session }: { session: AuthResponse }) {
         </div>
       </div>
 
+      {/* UI element is loading */}
       {todos.isPending ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 8 }, (_, index) => (
@@ -157,6 +164,7 @@ export function WorkspacePage({ session }: { session: AuthResponse }) {
           </div>
         </div>
       ) : null}
+      {/* Show a board with TODO items categorized by Status */}
       {todos.data?.items.length ? (
         <BoardView
           items={todos.data.items}
@@ -172,6 +180,7 @@ export function WorkspacePage({ session }: { session: AuthResponse }) {
         />
       ) : null}
 
+      {/* Previous and Next buttons */}
       {todos.data && (searchParams.has("cursor") || todos.data.hasMore) ? (
         <nav
           aria-label="TODO pages"
@@ -201,6 +210,7 @@ export function WorkspacePage({ session }: { session: AuthResponse }) {
         </nav>
       ) : null}
 
+      {/* Edit, View and Delete side panel */}
       <TodoDetails
         workspaceId={workspace.id}
         todoId={selectedTodoId}

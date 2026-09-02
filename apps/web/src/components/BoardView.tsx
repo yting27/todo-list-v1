@@ -1,4 +1,5 @@
 import { TodoCard } from "@/components/TodoCard";
+import { TODO_STATUS_LABELS } from "@/lib/constants";
 import type { Todo, TodoStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -7,10 +8,10 @@ const columns: {
   label: string;
   bar: string;
 }[] = [
-  { status: "NotStarted", label: "Not started", bar: "bg-slate-400" },
-  { status: "InProgress", label: "In progress", bar: "bg-sky-500" },
-  { status: "Completed", label: "Completed", bar: "bg-primary" },
-  { status: "Archived", label: "Archived", bar: "bg-zinc-400" },
+  { status: "NotStarted", label: TODO_STATUS_LABELS.NotStarted, bar: "bg-slate-400" },
+  { status: "InProgress", label: TODO_STATUS_LABELS.InProgress, bar: "bg-sky-500" },
+  { status: "Completed", label: TODO_STATUS_LABELS.Completed, bar: "bg-primary" },
+  { status: "Archived", label: TODO_STATUS_LABELS.Archived, bar: "bg-zinc-400" },
 ];
 
 export function BoardView({
@@ -24,6 +25,7 @@ export function BoardView({
   onOpen: (id: string) => void;
   onDelete: (id: string) => void;
 }) {
+  // List of columns where each represents a unique status key
   const visibleColumns = columns
     .map((column) => ({
       ...column,
@@ -79,6 +81,7 @@ export function BoardView({
                 ) : null}
               </p>
             </header>
+            {/* Display TODO item cards */}
             <div className="flex flex-1 flex-col gap-3">
               {todos.map((todo) => (
                 <TodoCard

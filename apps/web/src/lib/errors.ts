@@ -8,6 +8,8 @@ const problemMessages: Readonly<Record<string, string>> = {
   duplicate_dependency: "That prerequisite has already been added.",
   forbidden: "You do not have permission to do that.",
   if_match_required: "Refresh this TODO and try again.",
+  incomplete_prerequisite:
+    "Only completed TODOs can be prerequisites for an in-progress or completed TODO.",
   in_progress_would_be_blocked:
     "An in-progress TODO cannot have an incomplete prerequisite.",
   internal_error: "Something went wrong. Please try again.",
@@ -35,7 +37,8 @@ const problemMessages: Readonly<Record<string, string>> = {
   self_dependency: "A TODO cannot depend on itself.",
   stale_version:
     "This TODO changed since you opened it. Review the latest version and try again.",
-  todo_blocked: "Complete all prerequisites before starting this TODO.",
+  todo_blocked:
+    "Complete all prerequisites before starting or completing this TODO.",
   todo_has_dependents:
     "Remove active prerequisite links before deleting this TODO.",
   untrusted_origin:

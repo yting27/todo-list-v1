@@ -75,8 +75,11 @@ export function useWorkspaceEvents(workspaceId: string | undefined) {
         ),
       );
       if (event.version <= cachedVersion) return;
+      // Invalidate the whole `["todo", workspaceId]` prefix, not just the
+      // changed TODO: dependent TODOs cache a snapshot of this TODO's status
+      // in their `dependencies` array and must be refetched too.
       void queryClient.invalidateQueries({
-        queryKey: ["todo", workspaceId, event.todoId],
+        queryKey: ["todo", workspaceId],
       });
       void reconcile();
     }

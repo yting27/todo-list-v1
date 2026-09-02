@@ -274,6 +274,7 @@ function Topbar({
   );
 }
 
+// Define the whole webpage layout
 export function AppLayout({
   session,
   workspace,

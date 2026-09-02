@@ -33,6 +33,8 @@ export function CreateWorkspaceDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  // Default to the user's browser timezone so new workspaces start with
+  // sensible date display without requiring manual entry.
   const [timezone, setTimezone] = useState(
     Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
   );
@@ -113,6 +115,7 @@ export function MembersDialog({ workspace }: { workspace: Workspace }) {
   const members = useQuery({
     queryKey: ["members", workspace.id],
     queryFn: () => api.listMembers(workspace.id),
+    // Lazily fetch members only once the dialog is actually opened.
     enabled: open,
   });
   const add = useMutation({
@@ -153,6 +156,7 @@ export function MembersDialog({ workspace }: { workspace: Workspace }) {
               key={member.userId}
             >
               <div className="grid size-8 place-items-center rounded-full bg-muted text-xs font-medium">
+                {/* Fallback avatar: first two initials of the display name. */}
                 {member.displayName.slice(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">

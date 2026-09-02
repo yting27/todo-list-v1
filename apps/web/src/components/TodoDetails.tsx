@@ -39,14 +39,20 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { api, ApiError } from "@/lib/api";
+import { TODO_STATUS_LABELS } from "@/lib/constants";
 import { describeApiError } from "@/lib/errors";
 import type { AffectedTodo, Todo, TodoUpdate } from "@/lib/types";
 import { TodoForm } from "./TodoForm";
 
 export function TodoDetails({
   workspaceId,
-  todoId,
+  todoId, // selected todo ID
   timezone,
   listItems,
   canEdit,
@@ -62,27 +68,36 @@ export function TodoDetails({
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [deleteOpen, setDeleteOpen] = useState(false);
-  const [staleDraft, setStaleDraft] = useState<TodoUpdate | null>(null);
-  const [latest, setLatest] = useState<Todo | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false); // "Delete TODO?" confirm dialog
+  const [staleDraft, setStaleDraft] = useState<TodoUpdate | null>(null); // draft on 412 conflict
+  const [latest, setLatest] = useState<Todo | null>(null); // latest server copy for 412 dialog
   const [reopen, setReopen] = useState<{
+    // pending 409 "reset affected TODOs" confirmation
     draft: TodoUpdate;
     affected: AffectedTodo[];
   } | null>(null);
-  const [dependencyId, setDependencyId] = useState("");
+  const [dependencyId, setDependencyId] = useState(""); // selected new prerequisite
   const detail = useQuery({
     queryKey: ["todo", workspaceId, todoId],
     queryFn: () => api.getTodo(workspaceId, todoId!),
     enabled: Boolean(todoId),
   });
+  // Re-fetch the workspace's TODO details and list after any mutation. We
+  // invalidate the whole `["todo", workspaceId]` prefix (not just this TODO)
+  // because a change here can ripple into *dependent* TODOs, whose cached
+  // `dependencies` array embeds a snapshot of this TODO's status.
   const invalidate = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({
-        queryKey: ["todo", workspaceId, todoId],
-      }),
+      queryClient.invalidateQueries({ queryKey: ["todo", workspaceId] }),
       queryClient.invalidateQueries({ queryKey: ["todos", workspaceId] }),
     ]);
   };
+  // Updates use optimistic concurrency: the request carries `todo.version`, and
+  // the server compares it against the current version before applying the write.
+  // - 412: the TODO was modified elsewhere since we loaded it → show a "changed
+  //   elsewhere" dialog so the user can review the latest version.
+  // - 409: the edit has downstream side effects (e.g. reopening a prerequisite)
+  //   that require explicit confirmation → show the "reset affected TODOs" dialog.
   const update = useMutation({
     mutationFn: ({ todo, draft }: { todo: Todo; draft: TodoUpdate }) =>
       api.updateTodo(workspaceId, todo.id, todo.version, draft),
@@ -114,6 +129,7 @@ export function TodoDetails({
       } else toast.error(describeApiError(error, "Could not update TODO."));
     },
   });
+  // Delete this TODO
   const remove = useMutation({
     mutationFn: (todo: Todo) =>
       api.deleteTodo(workspaceId, todo.id, todo.version),
@@ -126,6 +142,7 @@ export function TodoDetails({
     onError: (error) =>
       toast.error(describeApiError(error, "Could not delete TODO.")),
   });
+  // Add parent/pre-requisite task
   const addDependency = useMutation({
     mutationFn: ({ todo, dependsOnId }: { todo: Todo; dependsOnId: string }) =>
       api.addDependency(workspaceId, todo.id, todo.version, dependsOnId),
@@ -137,6 +154,7 @@ export function TodoDetails({
     onError: (error) =>
       toast.error(describeApiError(error, "Could not add prerequisite.")),
   });
+  // Removed pre-requisite task from this TODO
   const removeDependency = useMutation({
     mutationFn: ({ todo, dependsOnId }: { todo: Todo; dependsOnId: string }) =>
       api.removeDependency(workspaceId, todo.id, todo.version, dependsOnId),
@@ -158,22 +176,23 @@ export function TodoDetails({
   useEffect(() => {
     if (todoId && deleteRequested) setDeleteOpen(true);
   }, [deleteRequested, todoId]);
-  const candidates = useMemo(
-    () =>
-      detail.data
-        ? listItems.filter(
-            (item) =>
-              item.id !== detail.data.id &&
-              !detail.data!.dependencies.some(
-                (dependency) => dependency.id === item.id,
-              ),
-          )
-        : [],
-    [detail.data, listItems],
-  );
+  const candidates = useMemo(() => {
+    if (!detail.data) return [];
+    const requiresCompleted =
+      detail.data.status === "InProgress" || detail.data.status === "Completed";
+    return listItems.filter(
+      (item) =>
+        item.id !== detail.data!.id &&
+        (!requiresCompleted || item.status === "Completed") &&
+        !detail.data!.dependencies.some(
+          (dependency) => dependency.id === item.id,
+        ),
+    );
+  }, [detail.data, listItems]);
 
   return (
     <>
+      {/* Main drawer: shows the TODO form / read-only view plus prerequisites. */}
       <Sheet
         open={Boolean(todoId)}
         onOpenChange={(open) => {
@@ -243,25 +262,30 @@ export function TodoDetails({
                               dependency.completed ? "secondary" : "outline"
                             }
                           >
-                            {dependency.completed
-                              ? "Complete"
-                              : dependency.status}
+                            {TODO_STATUS_LABELS[dependency.status]}
                           </Badge>
                           {canEdit ? (
-                            <Button
-                              aria-label={`Remove ${dependency.name} prerequisite`}
-                              size="icon-sm"
-                              variant="ghost"
-                              disabled={removeDependency.isPending}
-                              onClick={() =>
-                                removeDependency.mutate({
-                                  todo: detail.data!,
-                                  dependsOnId: dependency.id,
-                                })
-                              }
-                            >
-                              <Unlink />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  aria-label={`Remove ${dependency.name} prerequisite`}
+                                  size="icon-sm"
+                                  variant="ghost"
+                                  disabled={removeDependency.isPending}
+                                  onClick={() =>
+                                    removeDependency.mutate({
+                                      todo: detail.data!,
+                                      dependsOnId: dependency.id,
+                                    })
+                                  }
+                                >
+                                  <Unlink />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Remove prerequisite
+                              </TooltipContent>
+                            </Tooltip>
                           ) : null}
                         </div>
                       ))}
@@ -318,6 +342,7 @@ export function TodoDetails({
         </SheetContent>
       </Sheet>
 
+      {/* Confirm dialog for deleting the selected TODO. */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -343,6 +368,8 @@ export function TodoDetails({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Confirm dialog shown when reopening a prerequisite would reset
+          dependent TODOs (409 "reopen_requires_confirmation"). */}
       <AlertDialog
         open={Boolean(reopen)}
         onOpenChange={(open) => {
@@ -355,7 +382,8 @@ export function TodoDetails({
             <AlertDialogDescription>
               Reopening this prerequisite will reset{" "}
               {reopen?.affected.length ?? 0} downstream TODO
-              {reopen?.affected.length === 1 ? "" : "s"} to Not started:{" "}
+              {reopen?.affected.length === 1 ? "" : "s"} to{" "}
+              {TODO_STATUS_LABELS.NotStarted}:{" "}
               {reopen?.affected.map((todo) => todo.name).join(", ")}.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -378,6 +406,8 @@ export function TodoDetails({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Modal shown when the server returns 412 (TODO changed elsewhere):
+          lets the user review the latest version before reapplying edits. */}
       <Dialog
         open={Boolean(staleDraft)}
         onOpenChange={(open) => {
@@ -434,6 +464,7 @@ export function TodoDetails({
   );
 }
 
+// Read-only summary shown to users who can view but not edit this TODO.
 function ReadOnlyTodo({ todo, timezone }: { todo: Todo; timezone: string }) {
   return (
     <div className="space-y-4">

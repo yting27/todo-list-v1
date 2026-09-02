@@ -89,4 +89,4 @@ flowchart LR
 
 Redis Pub/Sub may duplicate a notification if the relay fails between publish and acknowledgment. Event IDs and monotonic TODO versions make duplicates harmless. Reconnect and window focus invalidate the current workspace to reconcile missed notifications.
 
-See [decision.md](decision.md) for scope and trade-offs, [docs/architecture.md](docs/architecture.md) for the production target, [docs/performance.md](docs/performance.md) for the 10,000-row baseline, and [PLAN.md](PLAN.md) for the full implementation plan.
+See [DECISION_LOG.md](DECISION_LOG.md) for interpretations of ambiguous instructions, architectural trade-offs, deliberately deferred scope, the measured 10,000-row baseline, and production follow-ups.

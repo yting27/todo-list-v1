@@ -87,6 +87,43 @@ describe.sequential("TodoService PostgreSQL invariants", () => {
     });
   });
 
+  it("rejects incomplete prerequisites for completed TODOs", async () => {
+    const prerequisite = await create("Incomplete prerequisite");
+    const completed = await create("Completed dependent", {
+      status: "Completed",
+    });
+
+    await expect(
+      service.addDependency(
+        userId,
+        workspaceId,
+        completed.id,
+        prerequisite.id,
+        completed.version,
+      ),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: "incomplete_prerequisite",
+    });
+
+    await expect(
+      create("Invalid completed TODO", {
+        status: "Completed",
+        dependencyIds: [prerequisite.id],
+      }),
+    ).rejects.toMatchObject({ status: 409, code: "todo_blocked" });
+
+    const dependent = await create("Blocked dependent", {
+      dependencyIds: [prerequisite.id],
+    });
+    await expect(
+      service.update(userId, workspaceId, dependent.id, dependent.version, {
+        status: "Completed",
+        cascadeDependents: false,
+      }),
+    ).rejects.toMatchObject({ status: 409, code: "todo_blocked" });
+  });
+
   it("requires confirmation and atomically resets a transitive reopen chain", async () => {
     let a = await create("A", { status: "Completed" });
     let b = await create("B", { status: "Completed" });

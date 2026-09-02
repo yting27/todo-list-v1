@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { TODO_STATUS_LABELS } from "@/lib/constants";
 import type {
   Todo,
   TodoInput,
@@ -142,10 +143,18 @@ export function TodoForm({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="NotStarted">Not started</SelectItem>
-              <SelectItem value="InProgress">In progress</SelectItem>
-              <SelectItem value="Completed">Completed</SelectItem>
-              <SelectItem value="Archived">Archived</SelectItem>
+              <SelectItem value="NotStarted">
+                {TODO_STATUS_LABELS.NotStarted}
+              </SelectItem>
+              <SelectItem value="InProgress">
+                {TODO_STATUS_LABELS.InProgress}
+              </SelectItem>
+              <SelectItem value="Completed">
+                {TODO_STATUS_LABELS.Completed}
+              </SelectItem>
+              <SelectItem value="Archived">
+                {TODO_STATUS_LABELS.Archived}
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>

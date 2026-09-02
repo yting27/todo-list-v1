@@ -42,6 +42,8 @@ export function TodoCard({
   onOpen: () => void;
   onDelete: () => void;
 }) {
+  // `dueAt` is stored as an ISO timestamp (UTC). Format it in the user's
+  // workspace timezone so every viewer sees the same local wall-clock time.
   const due = new Intl.DateTimeFormat(undefined, {
     timeZone: timezone,
     dateStyle: "medium",

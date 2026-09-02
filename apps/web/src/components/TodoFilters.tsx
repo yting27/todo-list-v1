@@ -16,14 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { TODO_STATUS_LABELS } from "@/lib/constants";
 import type { TodoPriority, TodoStatus } from "@/lib/types";
 
-const statuses: { value: TodoStatus; label: string }[] = [
-  { value: "NotStarted", label: "Not started" },
-  { value: "InProgress", label: "In progress" },
-  { value: "Completed", label: "Completed" },
-  { value: "Archived", label: "Archived" },
-];
+const statuses = Object.entries(TODO_STATUS_LABELS).map(([value, label]) => ({
+  value: value as TodoStatus,
+  label,
+}));
 const priorities: TodoPriority[] = ["Low", "Medium", "High"];
 
 export function TodoFilters({ timezone }: { timezone: string }) {
@@ -34,6 +33,8 @@ export function TodoFilters({ timezone }: { timezone: string }) {
   const selectedPriorities = new Set(
     (params.get("priority") ?? "").split(",").filter(Boolean),
   );
+  // Badge shows how many filters are active (a set of statuses/priorities
+  // counts as one filter, and each date/dependency param counts as one).
   const activeCount =
     selectedStatuses.size +
     selectedPriorities.size +
@@ -41,6 +42,8 @@ export function TodoFilters({ timezone }: { timezone: string }) {
     (params.has("dueFrom") ? 1 : 0) +
     (params.has("dueTo") ? 1 : 0);
 
+  // Persist filter state to the URL query string. Cursor is dropped so
+  // changing a filter resets pagination back to the first page.
   function change(name: string, value: string | null) {
     setParams((current) => {
       const next = new URLSearchParams(current);
@@ -60,6 +63,8 @@ export function TodoFilters({ timezone }: { timezone: string }) {
     else next.add(value);
     change(name, [...next].join(",") || null);
   }
+  // Date inputs work in the workspace timezone: render the stored UTC
+  // timestamp as a local date, and convert a picked date back to UTC.
   function dateValue(name: "dueFrom" | "dueTo") {
     const value = params.get(name);
     return value ? formatInTimeZone(value, timezone, "yyyy-MM-dd") : "";
