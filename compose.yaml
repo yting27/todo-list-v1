@@ -1,4 +1,4 @@
-name: sleekflow-todo-js
+name: todo-js
 
 x-app-environment: &app-environment
   NODE_ENV: production
@@ -13,7 +13,7 @@ x-app-environment: &app-environment
   AUTH_RATE_WINDOW_SECONDS: ${AUTH_RATE_WINDOW_SECONDS:-900}
 
 x-api-image: &api-image
-  image: sleekflow-todo-api:local
+  image: todo-api:local
 
 services:
   postgres:
@@ -106,7 +106,7 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    image: sleekflow-todo-web:local
+    image: todo-web:local
     ports:
       - "${WEB_PORT:-3000}:8080"
     depends_on:

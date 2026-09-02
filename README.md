@@ -1,4 +1,4 @@
-# SleekFlow TODO List System
+# TODO List System
 
 A production-shaped modular monolith for a shared TODO workspace. It implements the required CRUD, recurrence, dependencies, filtering/sorting, concurrent access, retained deletion, and 10,000-item behavior, plus authentication and real-time refresh.
 

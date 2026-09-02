@@ -6,7 +6,7 @@ export function AuthLayout({ children }: PropsWithChildren) {
     <main className="grid min-h-screen lg:grid-cols-[1.05fr_0.95fr]">
       <section className="hidden bg-primary p-12 text-primary-foreground lg:flex lg:flex-col lg:justify-between">
         <div className="text-xl font-semibold tracking-tight">
-          SleekFlow TODO
+          TODO
         </div>
         <div className="max-w-xl space-y-6">
           <p className="text-5xl font-semibold leading-[1.08] tracking-tight">

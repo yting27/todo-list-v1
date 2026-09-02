@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: SleekFlow TODO API
+  title: TODO API
   version: 1.0.0
   description: Workspace-scoped collaborative TODO API. Errors use RFC 9457 Problem Details.
 servers:

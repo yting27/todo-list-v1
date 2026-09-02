@@ -73,7 +73,7 @@ function Sidebar({
             <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground">
               <SquaresIntersect className="size-4" />
             </span>
-            sleekflow
+            TODO
           </span>
         )}
         {!collapsed ? (
