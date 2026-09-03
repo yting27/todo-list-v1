@@ -8,10 +8,26 @@ const columns: {
   label: string;
   bar: string;
 }[] = [
-  { status: "NotStarted", label: TODO_STATUS_LABELS.NotStarted, bar: "bg-slate-400" },
-  { status: "InProgress", label: TODO_STATUS_LABELS.InProgress, bar: "bg-sky-500" },
-  { status: "Completed", label: TODO_STATUS_LABELS.Completed, bar: "bg-primary" },
-  { status: "Archived", label: TODO_STATUS_LABELS.Archived, bar: "bg-zinc-400" },
+  {
+    status: "NotStarted",
+    label: TODO_STATUS_LABELS.NotStarted,
+    bar: "bg-slate-400",
+  },
+  {
+    status: "InProgress",
+    label: TODO_STATUS_LABELS.InProgress,
+    bar: "bg-sky-500",
+  },
+  {
+    status: "Completed",
+    label: TODO_STATUS_LABELS.Completed,
+    bar: "bg-primary",
+  },
+  {
+    status: "Archived",
+    label: TODO_STATUS_LABELS.Archived,
+    bar: "bg-zinc-400",
+  },
 ];
 
 export function BoardView({

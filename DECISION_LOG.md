@@ -62,11 +62,11 @@ Production-shaped data distributions and combined filters should be measured bef
 
 ## 5. What I would do with more time
 
-| Area | Follow-up recorded in the source documents |
-| --- | --- |
-| Browser testing | Add browser-level multi-user Playwright coverage. |
-| Product workflows | Add automatic email workflows, owner transfer, and an administrative restore screen. |
-| Observability | Add OpenTelemetry exporters and dashboards, outbox-lag alerts, and a dead-letter policy for repeatedly failing publications. |
-| Performance | Run load tests with production-shaped data distributions and use the results to drive index and capacity decisions. |
+| Area                 | Follow-up recorded in the source documents                                                                                                                                                          |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Browser testing      | Add browser-level multi-user Playwright coverage.                                                                                                                                                   |
+| Product workflows    | Add automatic email workflows, owner transfer, and an administrative restore screen.                                                                                                                |
+| Observability        | Add OpenTelemetry exporters and dashboards, outbox-lag alerts, and a dead-letter policy for repeatedly failing publications.                                                                        |
+| Performance          | Run load tests with production-shaped data distributions and use the results to drive index and capacity decisions.                                                                                 |
 | Production hardening | Add automated backups, connection-pool sizing against database limits, network policies, a PodDisruptionBudget, and topology spreading. Add an HPA only after measuring CPU and request saturation. |
-| Live collaboration | Consider WebSockets and CRDTs only if field-level simultaneous editing becomes a requirement. |
+| Live collaboration   | Consider WebSockets and CRDTs only if field-level simultaneous editing becomes a requirement.                                                                                                       |
