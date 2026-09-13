@@ -14,6 +14,16 @@ class MemoryRedis {
     return "OK";
   }
 
+  async set(
+    key: string,
+    value: string,
+    options?: { EX?: number; NX?: boolean },
+  ) {
+    if (options?.NX && this.counts.has(key)) return null;
+    this.counts.set(key, Number(value));
+    return "OK";
+  }
+
   async get(key: string) {
     return this.values.get(key) ?? null;
   }

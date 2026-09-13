@@ -4,6 +4,7 @@ import type { Queryable } from "../../platform/db.js";
 import { mapTodo, todoSelect, type TodoRow } from "./model.js";
 import type { ListQuery } from "./schemas.js";
 
+// SQL expressions and casts come from this allowlist; request values use parameters.
 const sortDefinitions = {
   dueAt: {
     expression: "t.due_at",
@@ -52,6 +53,7 @@ export async function listTodos(
   if (input.dueTo)
     conditions.push(`t.due_at < ${add(input.dueTo)}::timestamptz`);
   if (input.search) {
+    // Treat wildcard characters as literal search text inside the substring match.
     const escaped = input.search.replace(/[\\%_]/g, (char) => `\\${char}`);
     conditions.push(
       `(t.name ILIKE ${add(`%${escaped}%`)} ESCAPE '\\' OR t.description ILIKE ${add(`%${escaped}%`)} ESCAPE '\\')`,
@@ -68,12 +70,14 @@ export async function listTodos(
   }
 
   const sort = sortDefinitions[input.sort];
+  // The cursor comparison must use the same columns and direction as ORDER BY.
   if (input.cursor) {
     const cursor = decodeCursor(input.cursor, input.sort, input.direction);
     const operator = input.direction === "asc" ? ">" : "<";
     const valueParameter = add(cursor.value);
     const idParameter = add(cursor.id);
     if (input.sort === "name") {
+      // Original casing and then UUID break ties between names with the same lowercase value.
       if (!cursor.secondary) {
         throw new Error(
           "Name cursor is missing its case-sensitive tie-breaker",
@@ -95,6 +99,7 @@ export async function listTodos(
     input.sort === "name"
       ? `lower(t.name) ${direction}, t.name ${direction}, t.id ${direction}`
       : `${sort.expression} ${direction}, t.id ${direction}`;
+  // One extra row detects another page without a separate COUNT query.
   const limitParameter = add(input.limit + 1);
   const result = await queryable.query<TodoRow>(
     `${todoSelect}

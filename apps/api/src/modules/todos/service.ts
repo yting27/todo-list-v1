@@ -36,6 +36,7 @@ interface SeriesRow {
 const IN_PROGRESS_STATUS = statusCode("InProgress");
 const COMPLETED_STATUS = statusCode("Completed");
 
+// Use the mutation's transaction so the TODO change and its event commit together.
 async function insertOutbox(
   client: Queryable,
   eventType: "todo.created" | "todo.updated" | "todo.deleted",
@@ -83,6 +84,7 @@ async function lockTodo(
 }
 
 function verifyVersion(todo: LockedTodo, expectedVersion: number) {
+  // The row lock serializes writers; the version rejects edits based on an older client view.
   if (todo.version !== expectedVersion) throw staleVersion();
 }
 
@@ -215,6 +217,7 @@ export class TodoService {
         client,
       );
       if (input.cascadeDependents) {
+        // Take the graph lock before row locks, matching dependency mutation lock order.
         await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
           workspaceId,
         ]);
@@ -247,6 +250,7 @@ export class TodoService {
         );
       }
 
+      // Preserve the original completion time when editing an already completed TODO.
       const completedAtSql =
         current.status !== 2 && nextStatus === 2
           ? "clock_timestamp()"
@@ -324,6 +328,7 @@ export class TodoService {
       );
       const current = await lockTodo(client, workspaceId, todoId);
       verifyVersion(current, expectedVersion);
+      // Cancelled dependents (status 3) do not prevent deleting their prerequisite.
       const dependents = await client.query<{ id: string; name: string }>(
         `SELECT d.id, d.name FROM todo_dependencies td JOIN todos d ON d.id = td.todo_id
          WHERE td.depends_on_id = $1 AND d.deleted_at IS NULL AND d.status <> 3
@@ -371,11 +376,13 @@ export class TodoService {
         ["owner", "editor"],
         client,
       );
+      // Coordinate graph edits and confirmed reopen cascades within this workspace.
       await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
         workspaceId,
       ]);
       if (todoId === dependsOnId)
         throw conflict("self_dependency", "A TODO cannot depend on itself.");
+      // Lock both endpoints in a stable order to reduce deadlock risk.
       const locked = await client.query<LockedTodo>(
         `SELECT id, workspace_id, name, description, due_at, status, priority, version,
           recurrence_series_id, recurrence_sequence, completed_at
@@ -405,6 +412,7 @@ export class TodoService {
           "Only completed TODOs can be prerequisites for an in-progress or completed TODO.",
         );
       }
+      // Adding A -> B creates a cycle if following B's prerequisites already reaches A.
       const cycle = await client.query(
         `WITH RECURSIVE prerequisites(id) AS (
            SELECT depends_on_id FROM todo_dependencies WHERE todo_id = $1
@@ -501,6 +509,7 @@ export class TodoService {
     mustBeComplete: boolean,
   ) {
     if (!dependencyIds.length) return;
+    // Keep prerequisites from changing or being deleted before creation commits.
     const result = await client.query<{ id: string; status: number }>(
       `SELECT id, status FROM todos
        WHERE workspace_id = $1 AND id = ANY($2::uuid[]) AND deleted_at IS NULL FOR SHARE`,
@@ -531,6 +540,7 @@ export class TodoService {
       await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [
         workspaceId,
       ]);
+    // Traverse all downstream links, then reset only active in-progress/completed TODOs.
     const affected = await client.query<{
       id: string;
       name: string;
@@ -547,6 +557,7 @@ export class TodoService {
       [current.id, workspaceId],
     );
     if (affected.rows.length && !confirmed) {
+      // The transaction rolls back; the client can show this impact before resubmitting.
       throw conflict(
         "reopen_requires_confirmation",
         "Reopening this prerequisite will reset affected downstream TODOs.",
@@ -582,6 +593,7 @@ export class TodoService {
     current: LockedTodo,
     completedAt: Date,
   ): Promise<string | null> {
+    // Generate from the stored local anchor using the workspace's current timezone.
     const series = await client.query<SeriesRow>(
       `SELECT rs.id, rs.interval_count, rs.interval_unit, rs.anchor_local, rs.anchor_day, w.timezone
        FROM recurrence_series rs JOIN workspaces w ON w.id = rs.workspace_id
@@ -605,6 +617,8 @@ export class TodoService {
       completedAt.toISOString(),
     );
     const id = uuidv7();
+    // The unique series/sequence key prevents recreating an existing occurrence.
+    // New occurrences start without dependency links from the completed TODO.
     const inserted = await client.query<{ id: string }>(
       `INSERT INTO todos
         (id, workspace_id, name, description, due_at, status, priority, recurrence_series_id,

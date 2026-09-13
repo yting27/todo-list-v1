@@ -40,9 +40,11 @@ function splitList<T extends string>(
   allowed: readonly T[],
 ): T[] | undefined {
   if (value === undefined) return undefined;
+  // Accept both repeated query parameters and comma-separated values.
   const values = (
     Array.isArray(value) ? value : String(value).split(",")
   ).flatMap((item) => String(item).split(","));
+  // An empty result lets the query schema reject invalid filters instead of ignoring them.
   return values.every((item): item is T => allowed.includes(item as T))
     ? [...new Set(values)]
     : ([] as T[]);

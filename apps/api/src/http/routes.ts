@@ -93,6 +93,7 @@ export function createApiRouter(dependencies: RouteDependencies) {
     response.json(result.body);
   });
 
+  // Registration and login are public; every route below requires a valid session.
   router.use(authenticate(sessions, config.sessionCookieName));
 
   router.get("/auth/me", async (request, response) => {
@@ -100,6 +101,7 @@ export function createApiRouter(dependencies: RouteDependencies) {
     response.json(await auth.current(session.userId, session.csrfToken));
   });
 
+  // Authentication must populate request.auth before CSRF checks on state-changing requests.
   router.use(requireCsrf(sessions));
 
   router.post("/auth/logout", async (request, response) => {

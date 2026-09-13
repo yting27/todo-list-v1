@@ -30,6 +30,7 @@ process.on("SIGTERM", () => stop("SIGTERM"));
 process.on("SIGINT", () => stop("SIGINT"));
 
 async function claimBatch(): Promise<OutboxRow[]> {
+  // Skip other workers' locked rows and reclaim leases older than a minute after a failure.
   return inTransaction(pool, async (client) => {
     const result = await client.query<OutboxRow>(
       `WITH candidates AS (
@@ -51,6 +52,7 @@ async function claimBatch(): Promise<OutboxRow[]> {
 }
 
 async function publish(row: OutboxRow) {
+  // A crash after publishing but before marking the row can deliver the same event again.
   await redis.publish(
     `workspace:${row.workspace_id}`,
     JSON.stringify(row.payload),

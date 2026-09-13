@@ -103,6 +103,7 @@ export class WorkspaceService {
     queryable: Queryable = this.pool,
   ): Promise<WorkspaceRole> {
     const role = await this.role(userId, workspaceId, queryable);
+    // Hide workspace existence from non-members; members with insufficient roles get 403.
     if (!role) throw notFound("Workspace not found.");
     if (!roles.includes(role)) throw forbidden();
     return role;

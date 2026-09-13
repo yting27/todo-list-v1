@@ -20,6 +20,7 @@ function digest(token: string): string {
 }
 
 function key(token: string): string {
+  // Redis stores a digest so session keys do not expose reusable cookie tokens.
   return `session:${digest(token)}`;
 }
 
@@ -64,6 +65,7 @@ export class SessionStore {
       return null;
     }
     record.lastSeenAt = now;
+    // Activity refreshes idle expiry but cannot extend the session's absolute lifetime.
     const remainingAbsoluteSeconds = Math.max(
       1,
       Math.floor((record.absoluteExpiresAt - now) / 1000),
@@ -84,6 +86,7 @@ export class SessionStore {
     if (!supplied) return false;
     const expected = Buffer.from(record.csrfToken);
     const received = Buffer.from(supplied);
+    // timingSafeEqual requires equal byte lengths and throws otherwise.
     return (
       expected.length === received.length && timingSafeEqual(expected, received)
     );

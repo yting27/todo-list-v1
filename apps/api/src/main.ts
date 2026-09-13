@@ -16,6 +16,7 @@ const config = loadConfig();
 const logger = createLogger(config);
 const pool = createPool(config);
 const redis = makeRedisClient(config, logger);
+// Keep the long-lived Pub/Sub subscription separate from session and rate-limit commands.
 const subscriber = makeRedisClient(config, logger);
 
 await Promise.all([redis.connect(), subscriber.connect()]);
@@ -57,6 +58,7 @@ async function shutdown(signal: string) {
   logger.info({ signal }, "graceful shutdown started");
   const force = setTimeout(() => process.exit(1), 15_000);
   force.unref();
+  // End long-lived event streams so they do not hold server.close open indefinitely.
   sse.close();
   await new Promise<void>((resolve) => server.close(() => resolve()));
   await Promise.allSettled([subscriber.quit(), redis.quit(), pool.end()]);

@@ -55,6 +55,7 @@ export function scheduledLocal(
     throw new Error(
       `Invalid stored recurrence anchor: ${anchor.invalidReason ?? "unknown"}`,
     );
+  // Advance from the original local anchor so completion delays do not shift the schedule.
   const quantity = sequence * schedule.intervalCount;
   let candidate: DateTime;
   if (schedule.intervalUnit === "day")
@@ -62,6 +63,7 @@ export function scheduledLocal(
   else if (schedule.intervalUnit === "week")
     candidate = anchor.plus({ weeks: quantity });
   else {
+    // Clamp short months without losing the anchor day: Jan 31 -> Feb 28/29 -> Mar 31.
     const monthStart = anchor.startOf("month").plus({ months: quantity });
     const day = Math.min(
       schedule.anchorDay,

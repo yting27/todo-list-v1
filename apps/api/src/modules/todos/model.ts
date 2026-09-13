@@ -71,6 +71,7 @@ export function mapTodo(row: TodoRow) {
   };
 }
 
+// Aggregate dependencies per TODO so joins do not multiply rows and distort pagination.
 export const todoSelect = `
   SELECT t.id, t.workspace_id, t.name, t.description, t.due_at, t.status, t.priority,
     t.version, t.recurrence_series_id, t.recurrence_sequence, t.completed_at,

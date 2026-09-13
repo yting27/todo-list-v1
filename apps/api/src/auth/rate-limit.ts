@@ -15,13 +15,19 @@ export class AuthRateLimiter {
       .update(normalizedEmail)
       .digest("hex")
       .slice(0, 24);
+    // Count by IP and account independently so either limit can reject an attempt.
     const keys = [`rate:auth:ip:${ip}`, `rate:auth:email:${emailDigest}`];
     const counts = await Promise.all(
       keys.map(async (key) => {
-        const value = await this.redis.incr(key);
-        if (value === 1)
-          await this.redis.expire(key, this.config.AUTH_RATE_WINDOW_SECONDS);
-        return value;
+        // Atomically create the key with its TTL on the first attempt so a
+        // crash between commands can never leave an orphaned counter.
+        const created = await this.redis.set(key, 1, {
+          EX: this.config.AUTH_RATE_WINDOW_SECONDS,
+          NX: true,
+        });
+        if (created === "OK") return 1;
+        // Key already exists with its TTL set; increment without touching it.
+        return await this.redis.incr(key);
       }),
     );
     if (counts.some((count) => count > this.config.AUTH_RATE_LIMIT)) {

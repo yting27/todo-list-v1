@@ -13,6 +13,7 @@ const pool = createPool(config);
 const client = await pool.connect();
 
 try {
+  // A session-level lock spans all per-file transactions and serializes migration runners.
   await client.query(
     "SELECT pg_advisory_lock(hashtext('todo-schema-migrations'))",
   );
@@ -30,6 +31,7 @@ try {
       );
       if (exists.rowCount) continue;
       const sql = await readFile(`${migrationsDirectory}/${file}`, "utf8");
+      // Apply the schema change and record its version atomically.
       await client.query("BEGIN");
       try {
         await client.query(sql);

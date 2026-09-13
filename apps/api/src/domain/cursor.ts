@@ -18,6 +18,7 @@ const cursorSchema = z.object({
 export type Cursor = z.infer<typeof cursorSchema>;
 
 export function encodeCursor(cursor: Cursor): string {
+  // Base64url is a transport encoding, not a signature; decodeCursor still validates input.
   return Buffer.from(JSON.stringify(cursor), "utf8").toString("base64url");
 }
 

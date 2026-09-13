@@ -53,6 +53,7 @@ export class SseHub {
     this.clients.clear();
   }
 
+  // Pub/Sub forwards live notifications only; this hub does not replay missed event IDs.
   async subscribe(redis: RedisClient) {
     await redis.pSubscribe("workspace:*", (message) => {
       try {

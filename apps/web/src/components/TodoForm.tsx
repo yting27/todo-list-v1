@@ -78,10 +78,6 @@ export function TodoForm({
     () => options.filter((todo) => todo.id !== initial?.id),
     [initial?.id, options],
   );
-  const calendarDate = useMemo(() => {
-    const [year, month, day] = dueLocal.slice(0, 10).split("-").map(Number);
-    return year && month && day ? new Date(year, month - 1, day) : undefined;
-  }, [dueLocal]);
 
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -185,30 +181,6 @@ export function TodoForm({
             value={dueLocal}
             onChange={(event) => setDueLocal(event.target.value)}
           />
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                size="icon"
-                variant="outline"
-                aria-label="Choose due date"
-              >
-                <CalendarDays />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <Calendar
-                mode="single"
-                selected={calendarDate}
-                onSelect={(date) => {
-                  if (date)
-                    setDueLocal(
-                      `${format(date, "yyyy-MM-dd")}${dueLocal.slice(10)}`,
-                    );
-                }}
-              />
-            </PopoverContent>
-          </Popover>
         </div>
       </div>
       {!initial ? (

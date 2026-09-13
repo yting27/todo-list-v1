@@ -23,7 +23,7 @@ export function useWorkspaceEvents(workspaceId: string | undefined) {
     let reconnectDelay = 1_000;
     let openedOnce = false;
 
-    const reconcile = () =>
+    const invalidateTodoLists = () =>
       queryClient.invalidateQueries({
         predicate: (query) =>
           query.queryKey[0] === "todos" && query.queryKey[1] === workspaceId,
@@ -35,7 +35,7 @@ export function useWorkspaceEvents(workspaceId: string | undefined) {
         withCredentials: true,
       });
       source.onopen = () => {
-        if (openedOnce) void reconcile();
+        if (openedOnce) void invalidateTodoLists();
         openedOnce = true;
         reconnectDelay = 1_000;
       };
@@ -81,11 +81,11 @@ export function useWorkspaceEvents(workspaceId: string | undefined) {
       void queryClient.invalidateQueries({
         queryKey: ["todo", workspaceId],
       });
-      void reconcile();
+      void invalidateTodoLists();
     }
 
     connect();
-    const focus = () => void reconcile();
+    const focus = () => void invalidateTodoLists();
     window.addEventListener("focus", focus);
     return () => {
       cancelled = true;

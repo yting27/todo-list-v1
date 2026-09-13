@@ -2,6 +2,7 @@ import { TODO_PRIORITIES, TODO_STATUSES } from "@todo/contracts";
 
 import { badRequest } from "./errors.js";
 
+// Array positions are persisted as numeric codes; keep contract ordering aligned with stored data.
 export const statusToCode = new Map(
   TODO_STATUSES.map((status, index) => [status, index] as const),
 );

@@ -18,6 +18,7 @@ export function verifyPassword(hash: string, password: string) {
 }
 
 export async function consumeUnknownPassword(password: string) {
+  // Do password verification work for missing accounts to reduce the timing difference.
   dummyHash ??= hashPassword("not-a-real-account-password");
   await verifyPassword(await dummyHash, password).catch(() => false);
 }

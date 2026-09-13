@@ -28,6 +28,7 @@ export async function inTransaction<T>(
   fn: (client: DbClient) => Promise<T>,
   isolation: "READ COMMITTED" | "SERIALIZABLE" = "READ COMMITTED",
 ): Promise<T> {
+  // Every query in fn must use this client to participate in the same transaction.
   const client = await pool.connect();
   try {
     await client.query(`BEGIN ISOLATION LEVEL ${isolation}`);
@@ -46,6 +47,7 @@ export async function serializable<T>(
   pool: DbPool,
   fn: (client: DbClient) => Promise<T>,
 ): Promise<T> {
+  // Serialization failures replay the entire callback; keep external side effects out of fn.
   const attempts = 3;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
