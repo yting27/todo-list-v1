@@ -11,7 +11,6 @@ const schema = z.object({
     .default("development"),
   API_PORT: z.coerce.number().int().min(1).max(65535).default(8080),
   DATABASE_URL: z
-    .string()
     .url()
     .default("postgres://user0:todo_local_usr_password@127.0.0.1:5432/todo"),
   REDIS_URL: z.string().url().default("redis://127.0.0.1:6379"),

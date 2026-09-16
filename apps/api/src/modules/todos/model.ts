@@ -1,4 +1,8 @@
-import { priorityName, statusName } from "../../domain/todo.js";
+import {
+  COMPLETED_STATUS,
+  priorityName,
+  statusName,
+} from "../../domain/todo.js";
 
 export interface DependencyJson {
   id: string;
@@ -62,7 +66,7 @@ export function mapTodo(row: TodoRow) {
       id: dependency.id,
       name: dependency.name,
       status: statusName(dependency.status),
-      completed: dependency.status === 2,
+      completed: dependency.status === COMPLETED_STATUS,
     })),
     recurrence,
     completedAt: row.completed_at?.toISOString() ?? null,
@@ -85,7 +89,7 @@ export const todoSelect = `
     COALESCE((
       SELECT array_agg(d.id ORDER BY d.id)
       FROM todo_dependencies td JOIN todos d ON d.id = td.depends_on_id
-      WHERE td.todo_id = t.id AND d.deleted_at IS NULL AND d.status <> 2
+      WHERE td.todo_id = t.id AND d.deleted_at IS NULL AND d.status <> ${COMPLETED_STATUS}
     ), ARRAY[]::uuid[]) AS blocking_dependency_ids
   FROM todos t
   LEFT JOIN recurrence_series rs ON rs.id = t.recurrence_series_id`;

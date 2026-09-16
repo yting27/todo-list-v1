@@ -20,9 +20,11 @@ export function parse<T>(schema: ZodType<T>, value: unknown): T {
 
 export function requireTrustedOrigin(config: Config): RequestHandler {
   return (request, _response, next) => {
+    // Safe methods do not need cross-origin mutation protection.
     if (["GET", "HEAD", "OPTIONS"].includes(request.method)) return next();
     const fetchSite = request.get("sec-fetch-site");
     const origin = request.get("origin");
+    // Reject explicit cross-site signals; non-browser clients may omit both headers.
     if (
       fetchSite === "cross-site" ||
       (origin && !config.trustedOrigins.has(origin))
@@ -49,6 +51,7 @@ export function authenticate(
       const token = (request.cookies as Record<string, string | undefined>)[
         cookieName
       ];
+      // from sesseion store, retrieve auth record associated with `token`
       const record = token ? await sessions.get(token) : null;
       if (!record || !token) {
         throw new ProblemError({
@@ -58,6 +61,7 @@ export function authenticate(
           detail: "Sign in to continue.",
         });
       }
+      // Downstream authorization and CSRF checks use the validated session.
       (request as AuthenticatedRequest).auth = { ...record, token };
       next();
     } catch (error) {
@@ -69,6 +73,7 @@ export function authenticate(
 export function requireCsrf(sessions: SessionStore): RequestHandler {
   return (request, _response, next) => {
     if (["GET", "HEAD", "OPTIONS"].includes(request.method)) return next();
+    // Authentication runs first, so state-changing requests always have a session.
     const authenticated = request as AuthenticatedRequest;
     if (!sessions.verifyCsrf(authenticated.auth, request.get("x-csrf-token"))) {
       return next(
@@ -104,6 +109,7 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
     void _next;
     let problem: ProblemError;
     if (error instanceof ZodError) {
+      // Group validation messages by request field for structured client feedback.
       const errors: Record<string, string[]> = {};
       for (const issue of error.issues) {
         const path = issue.path.join(".") || "request";
@@ -126,6 +132,7 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
     } else if (error instanceof ProblemError) {
       problem = error;
     } else {
+      // Log unexpected details internally but return a generic public error.
       logger.error({ error, requestId: request.id }, "unhandled request error");
       problem = new ProblemError({
         status: 500,
@@ -134,6 +141,7 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
         detail: "An unexpected error occurred.",
       });
     }
+    // Send every failure in the same RFC 9457-compatible shape.
     response
       .status(problem.status)
       .type("application/problem+json")

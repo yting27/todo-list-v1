@@ -1,5 +1,9 @@
 import { decodeCursor, encodeCursor } from "../../domain/cursor.js";
-import { priorityCode, statusCode } from "../../domain/todo.js";
+import {
+  COMPLETED_STATUS,
+  priorityCode,
+  statusCode,
+} from "../../domain/todo.js";
 import type { Queryable } from "../../platform/db.js";
 import { mapTodo, todoSelect, type TodoRow } from "./model.js";
 import type { ListQuery } from "./schemas.js";
@@ -60,9 +64,11 @@ export async function listTodos(
     );
   }
   if (input.dependencyState) {
+    const completedStatusParameter = add(COMPLETED_STATUS);
     const exists = `EXISTS (
       SELECT 1 FROM todo_dependencies ftd JOIN todos fd ON fd.id = ftd.depends_on_id
-      WHERE ftd.todo_id = t.id AND fd.deleted_at IS NULL AND fd.status <> 2
+      WHERE ftd.todo_id = t.id AND fd.deleted_at IS NULL
+        AND fd.status <> ${completedStatusParameter}::smallint
     )`;
     conditions.push(
       input.dependencyState === "blocked" ? exists : `NOT ${exists}`,

@@ -32,7 +32,9 @@ export class SessionStore {
     private readonly redis: RedisClient,
     config: Config,
   ) {
+    // default: 7 days
     this.idleSeconds = config.SESSION_IDLE_DAYS * 24 * 60 * 60;
+    // default: 30 days
     this.absoluteMilliseconds =
       config.SESSION_ABSOLUTE_DAYS * 24 * 60 * 60 * 1000;
   }
@@ -72,6 +74,7 @@ export class SessionStore {
     );
     await this.redis.setEx(
       key(token),
+      // Expire at whichever limit comes first: inactivity or absolute lifetime.
       Math.min(this.idleSeconds, remainingAbsoluteSeconds),
       JSON.stringify(record),
     );

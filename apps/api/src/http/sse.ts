@@ -1,17 +1,11 @@
+import type { WorkspaceEvent } from "@todo/contracts";
 import type { Response } from "express";
 
 import type { Logger } from "../platform/logger.js";
 import type { RedisClient } from "../platform/redis.js";
 
-export interface WorkspaceEvent {
-  eventId: string;
-  eventType: "todo.created" | "todo.updated" | "todo.deleted";
-  workspaceId: string;
-  todoId: string;
-  version: number;
-}
-
 export class SseHub {
+  // Group authorized connections by workspace for scoped event fan-out.
   private readonly clients = new Map<string, Set<Response>>();
   private heartbeat: NodeJS.Timeout | undefined;
 
@@ -21,8 +15,10 @@ export class SseHub {
     const clients = this.clients.get(workspaceId) ?? new Set<Response>();
     clients.add(response);
     this.clients.set(workspaceId, clients);
+    // Tell EventSource to wait three seconds before reconnecting.
     response.write("retry: 3000\n\n");
     response.on("close", () => {
+      // Remove closed sockets and empty workspace buckets.
       clients.delete(response);
       if (clients.size === 0) this.clients.delete(workspaceId);
     });
@@ -30,6 +26,7 @@ export class SseHub {
 
   publish(event: WorkspaceEvent) {
     for (const response of this.clients.get(event.workspaceId) ?? []) {
+      // The blank line terminates one named SSE event frame.
       response.write(
         `id: ${event.eventId}\nevent: ${event.eventType}\ndata: ${JSON.stringify(event)}\n\n`,
       );
@@ -39,13 +36,16 @@ export class SseHub {
   startHeartbeats() {
     this.heartbeat = setInterval(() => {
       for (const responses of this.clients.values()) {
+        // SSE comments keep idle connections open without dispatching an event.
         for (const response of responses) response.write(": heartbeat\n\n");
       }
-    }, 20_000);
+    }, 20_000 /* milliseconds */);
+    // The heartbeat timer alone must not keep the Node process alive.
     this.heartbeat.unref();
   }
 
   close() {
+    // End every stream during graceful shutdown and release all references.
     if (this.heartbeat) clearInterval(this.heartbeat);
     for (const responses of this.clients.values()) {
       for (const response of responses) response.end();

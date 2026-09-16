@@ -17,6 +17,7 @@ import {
 } from "../modules/todos/schemas.js";
 import type { WorkspaceService } from "../modules/workspaces/service.js";
 
+// Strict schemas reject unknown fields instead of silently ignoring client typos.
 const registerSchema = z
   .object({
     email: z.email().max(320),
@@ -53,14 +54,15 @@ interface RouteDependencies {
 }
 
 function authRequest(request: unknown) {
+  // authenticate() establishes this shape for every protected route below.
   return request as AuthenticatedRequest;
 }
 
 function setSessionCookie(response: Response, config: Config, token: string) {
   response.cookie(config.sessionCookieName, token, {
-    httpOnly: true,
-    secure: config.COOKIE_SECURE,
-    sameSite: "lax",
+    httpOnly: true, // JavaScript cannot read the cookie
+    secure: config.COOKIE_SECURE, // true: sends it only over HTTPS
+    sameSite: "lax", // restricts sending it on cross-site requests
     path: "/",
     maxAge: config.SESSION_ABSOLUTE_DAYS * 24 * 60 * 60 * 1000,
   });
@@ -71,6 +73,7 @@ export function createApiRouter(dependencies: RouteDependencies) {
   const { auth, rateLimiter, sessions, workspaces, todos, sse, config } =
     dependencies;
 
+  // Public auth endpoints limit both the source IP and normalized account key.
   router.post("/auth/register", async (request, response) => {
     const input = parse(registerSchema, request.body);
     await rateLimiter.check(
@@ -97,6 +100,7 @@ export function createApiRouter(dependencies: RouteDependencies) {
   router.use(authenticate(sessions, config.sessionCookieName));
 
   router.get("/auth/me", async (request, response) => {
+    // Restore client auth state, including the CSRF token, after a page reload.
     const { auth: session } = authRequest(request);
     response.json(await auth.current(session.userId, session.csrfToken));
   });
@@ -180,6 +184,7 @@ export function createApiRouter(dependencies: RouteDependencies) {
     },
   );
 
+  // TODO versions use ETags; edits and dependency changes require If-Match.
   router.get("/workspaces/:workspaceId/todos", async (request, response) => {
     response.json(
       await todos.list(
@@ -274,6 +279,7 @@ export function createApiRouter(dependencies: RouteDependencies) {
       Connection: "keep-alive",
       "X-Accel-Buffering": "no",
     });
+    // Open the stream before the first event or heartbeat is available.
     response.flushHeaders();
     sse.add(workspaceId, response);
   });

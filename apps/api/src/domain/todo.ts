@@ -35,3 +35,8 @@ export function priorityCode(value: string) {
     throw badRequest("invalid_priority", `Unsupported TODO priority: ${value}`);
   return code;
 }
+
+export const NOT_STARTED_STATUS = statusCode("NotStarted"); // 0
+export const IN_PROGRESS_STATUS = statusCode("InProgress");
+export const COMPLETED_STATUS = statusCode("Completed");
+export const ARCHIVED_STATUS = statusCode("Archived");

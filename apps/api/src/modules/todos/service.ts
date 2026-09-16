@@ -1,8 +1,17 @@
+import type { TodoEventType, WorkspaceEvent } from "@todo/contracts";
 import { v7 as uuidv7 } from "uuid";
 
 import { conflict, notFound, staleVersion } from "../../domain/errors.js";
 import { localAnchor, nextOccurrence } from "../../domain/recurrence.js";
-import { priorityCode, statusCode, statusName } from "../../domain/todo.js";
+import {
+  ARCHIVED_STATUS,
+  COMPLETED_STATUS,
+  IN_PROGRESS_STATUS,
+  NOT_STARTED_STATUS,
+  priorityCode,
+  statusCode,
+  statusName,
+} from "../../domain/todo.js";
 import type { DbClient, DbPool, Queryable } from "../../platform/db.js";
 import { inTransaction, serializable } from "../../platform/db.js";
 import type { WorkspaceService } from "../workspaces/service.js";
@@ -33,19 +42,22 @@ interface SeriesRow {
   timezone: string;
 }
 
-const IN_PROGRESS_STATUS = statusCode("InProgress");
-const COMPLETED_STATUS = statusCode("Completed");
-
 // Use the mutation's transaction so the TODO change and its event commit together.
 async function insertOutbox(
   client: Queryable,
-  eventType: "todo.created" | "todo.updated" | "todo.deleted",
+  eventType: TodoEventType,
   workspaceId: string,
   todoId: string,
   version: number,
 ) {
   const id = uuidv7();
-  const payload = { eventId: id, eventType, workspaceId, todoId, version };
+  const payload: WorkspaceEvent = {
+    eventId: id,
+    eventType,
+    workspaceId,
+    todoId,
+    version,
+  };
   await client.query(
     `INSERT INTO outbox_events (id, event_type, aggregate_id, workspace_id, aggregate_version, payload)
      VALUES ($1, $2, $3, $4, $5, $6::jsonb)`,
@@ -161,7 +173,7 @@ export class TodoService {
           (id, workspace_id, name, description, due_at, status, priority, recurrence_series_id,
            recurrence_sequence, completed_at, created_by, updated_by)
          VALUES ($1, $2, $3, $4, $5::timestamptz, $6::smallint, $7::smallint, $8, $9,
-           CASE WHEN $6::smallint = 2 THEN clock_timestamp() ELSE NULL END, $10, $10)
+           CASE WHEN $6::smallint = ${COMPLETED_STATUS} THEN clock_timestamp() ELSE NULL END, $10, $10)
          RETURNING id, workspace_id, name, description, due_at, status, priority, version,
            recurrence_series_id, recurrence_sequence, completed_at`,
         [
@@ -186,7 +198,7 @@ export class TodoService {
       await insertOutbox(client, "todo.created", workspaceId, todoId, 1);
       const createdTodo = created.rows[0]!;
       if (
-        createdTodo.status === 2 &&
+        createdTodo.status === COMPLETED_STATUS &&
         createdTodo.recurrence_series_id &&
         createdTodo.completed_at
       ) {
@@ -230,8 +242,9 @@ export class TodoService {
       if (requiresCompletedPrerequisites(nextStatus)) {
         const blockers = await client.query(
           `SELECT 1 FROM todo_dependencies td JOIN todos d ON d.id = td.depends_on_id
-           WHERE td.todo_id = $1 AND d.deleted_at IS NULL AND d.status <> 2 LIMIT 1`,
-          [todoId],
+           WHERE td.todo_id = $1 AND d.deleted_at IS NULL
+             AND d.status <> $2::smallint LIMIT 1`,
+          [todoId, COMPLETED_STATUS],
         );
         if (blockers.rowCount)
           throw conflict(
@@ -240,7 +253,10 @@ export class TodoService {
           );
       }
 
-      if (current.status === 2 && nextStatus !== 2) {
+      if (
+        current.status === COMPLETED_STATUS &&
+        nextStatus !== COMPLETED_STATUS
+      ) {
         await this.handleReopen(
           client,
           userId,
@@ -252,9 +268,10 @@ export class TodoService {
 
       // Preserve the original completion time when editing an already completed TODO.
       const completedAtSql =
-        current.status !== 2 && nextStatus === 2
+        current.status !== COMPLETED_STATUS && nextStatus === COMPLETED_STATUS
           ? "clock_timestamp()"
-          : current.status === 2 && nextStatus !== 2
+          : current.status === COMPLETED_STATUS &&
+              nextStatus !== COMPLETED_STATUS
             ? "NULL"
             : "completed_at";
       const updated = await client.query<{
@@ -293,8 +310,8 @@ export class TodoService {
 
       let generatedOccurrenceId: string | null = null;
       if (
-        current.status !== 2 &&
-        nextStatus === 2 &&
+        current.status !== COMPLETED_STATUS &&
+        nextStatus === COMPLETED_STATUS &&
         current.recurrence_series_id &&
         current.recurrence_sequence !== null
       ) {
@@ -328,12 +345,12 @@ export class TodoService {
       );
       const current = await lockTodo(client, workspaceId, todoId);
       verifyVersion(current, expectedVersion);
-      // Cancelled dependents (status 3) do not prevent deleting their prerequisite.
+      // Archived dependents do not prevent deleting their prerequisite.
       const dependents = await client.query<{ id: string; name: string }>(
         `SELECT d.id, d.name FROM todo_dependencies td JOIN todos d ON d.id = td.todo_id
-         WHERE td.depends_on_id = $1 AND d.deleted_at IS NULL AND d.status <> 3
+         WHERE td.depends_on_id = $1 AND d.deleted_at IS NULL AND d.status <> $2::smallint
          ORDER BY lower(d.name), d.id LIMIT 20`,
-        [todoId],
+        [todoId, ARCHIVED_STATUS],
       );
       if (dependents.rows.length) {
         throw conflict(
@@ -405,7 +422,7 @@ export class TodoService {
       verifyVersion(todo, expectedVersion);
       if (
         requiresCompletedPrerequisites(todo.status) &&
-        dependency.status !== 2
+        dependency.status !== COMPLETED_STATUS
       ) {
         throw conflict(
           "incomplete_prerequisite",
@@ -521,7 +538,10 @@ export class TodoService {
         "Every dependency must be an active TODO in the same workspace.",
       );
     }
-    if (mustBeComplete && result.rows.some((row) => row.status !== 2)) {
+    if (
+      mustBeComplete &&
+      result.rows.some((row) => row.status !== COMPLETED_STATUS)
+    ) {
       throw conflict(
         "todo_blocked",
         "An in-progress or completed TODO cannot have incomplete prerequisites.",
@@ -552,9 +572,10 @@ export class TodoService {
          SELECT td.todo_id FROM todo_dependencies td JOIN downstream d ON td.depends_on_id = d.id
        )
        SELECT t.id, t.name, t.status FROM downstream d JOIN todos t ON t.id = d.id
-       WHERE t.workspace_id = $2 AND t.deleted_at IS NULL AND t.status IN (1, 2)
+       WHERE t.workspace_id = $2 AND t.deleted_at IS NULL
+         AND t.status = ANY($3::smallint[])
        ORDER BY t.id FOR UPDATE OF t`,
-      [current.id, workspaceId],
+      [current.id, workspaceId, [IN_PROGRESS_STATUS, COMPLETED_STATUS]],
     );
     if (affected.rows.length && !confirmed) {
       // The transaction rolls back; the client can show this impact before resubmitting.
@@ -572,9 +593,9 @@ export class TodoService {
     }
     for (const row of affected.rows) {
       const result = await client.query<{ version: number }>(
-        `UPDATE todos SET status = 0, completed_at = NULL, version = version + 1,
+        `UPDATE todos SET status = $3::smallint, completed_at = NULL, version = version + 1,
           updated_at = clock_timestamp(), updated_by = $2 WHERE id = $1 RETURNING version`,
-        [row.id, userId],
+        [row.id, userId, NOT_STARTED_STATUS],
       );
       await insertOutbox(
         client,

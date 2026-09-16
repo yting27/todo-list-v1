@@ -20,10 +20,12 @@ await redis.connect();
 
 let stopping = false;
 let wake: (() => void) | undefined;
+let idleTimer: NodeJS.Timeout | undefined;
 
 function stop(signal: string) {
   logger.info({ signal }, "outbox relay stopping");
   stopping = true;
+  if (idleTimer) clearTimeout(idleTimer);
   wake?.();
 }
 process.on("SIGTERM", () => stop("SIGTERM"));
@@ -72,11 +74,14 @@ while (!stopping) {
       await publish(row);
     }
     if (rows.length === 0) {
+      // No events found; wait before querying again unless shutdown wakes the loop early.
       await new Promise<void>((resolve) => {
         wake = resolve;
-        setTimeout(resolve, 500).unref();
+        idleTimer = setTimeout(resolve, 500);
+        idleTimer.unref();
       });
       wake = undefined;
+      idleTimer = undefined;
     }
   } catch (error) {
     logger.error({ error }, "outbox relay iteration failed");

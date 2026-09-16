@@ -100,6 +100,7 @@ export function nextOccurrence(
     sequence += 1
   ) {
     const candidate = scheduledLocal(schedule, sequence);
+    // Next candidate must be after current completed time
     if (candidate.toUTC() > completed.toUTC()) {
       return {
         sequence,
