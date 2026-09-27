@@ -3,7 +3,6 @@ import { TODO_EVENT_TYPES, type WorkspaceEvent } from "@todo/contracts";
 import { useEffect } from "react";
 
 import { eventStreamUrl } from "@/lib/api";
-import type { Todo, TodoList } from "@/lib/types";
 
 export function useWorkspaceEvents(workspaceId: string | undefined) {
   const queryClient = useQueryClient();
@@ -16,10 +15,11 @@ export function useWorkspaceEvents(workspaceId: string | undefined) {
     let reconnectDelay = 1_000;
     let openedOnce = false;
 
-    const invalidateTodoLists = () =>
+    const invalidateTodos = () =>
       queryClient.invalidateQueries({
         predicate: (query) =>
-          query.queryKey[0] === "todos" && query.queryKey[1] === workspaceId,
+          (query.queryKey[0] === "todos" || query.queryKey[0] === "todo") &&
+          query.queryKey[1] === workspaceId,
       });
 
     const connect = () => {
@@ -28,7 +28,7 @@ export function useWorkspaceEvents(workspaceId: string | undefined) {
         withCredentials: true,
       });
       source.onopen = () => {
-        if (openedOnce) void invalidateTodoLists();
+        if (openedOnce) void invalidateTodos();
         openedOnce = true;
         reconnectDelay = 1_000;
       };
@@ -52,35 +52,13 @@ export function useWorkspaceEvents(workspaceId: string | undefined) {
         return;
       }
       if (event.workspaceId !== workspaceId) return;
-      // Get previous TODOs
-      const detail = queryClient.getQueryData<Todo>([
-        "todo",
-        workspaceId,
-        event.todoId,
-      ]);
-      const lists = queryClient.getQueriesData<TodoList>({
-        queryKey: ["todos", workspaceId],
-      });
-      const cachedVersion = Math.max(
-        detail?.version ?? 0,
-        ...lists.map(
-          ([, list]) =>
-            list?.items.find((todo) => todo.id === event.todoId)?.version ?? 0,
-        ),
-      );
-      // Only refresh if the received version is newer.
-      if (event.version <= cachedVersion) return;
-      // Invalidate the whole `["todo", workspaceId]` prefix, not just the
-      // changed TODO: dependent TODOs cache a snapshot of this TODO's status
-      // in their `dependencies` array and must be refetched too.
-      void queryClient.invalidateQueries({
-        queryKey: ["todo", workspaceId],
-      });
-      void invalidateTodoLists();
+      // A current copy of the changed TODO does not guarantee that cached
+      // dependents contain its latest status.
+      void invalidateTodos();
     }
 
     connect();
-    const focus = () => void invalidateTodoLists();
+    const focus = () => void invalidateTodos();
     window.addEventListener("focus", focus);
     return () => {
       cancelled = true;

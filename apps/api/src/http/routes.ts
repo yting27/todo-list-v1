@@ -210,7 +210,11 @@ export function createApiRouter(dependencies: RouteDependencies) {
         parse(idSchema, request.params.workspaceId),
         parse(idSchema, request.params.todoId),
       );
-      response.set("ETag", formatEtag(todo.version)).json(todo);
+      // The version protects writes but does not track embedded prerequisites.
+      response
+        .set("Cache-Control", "no-store")
+        .set("ETag", formatEtag(todo.version))
+        .json(todo);
     },
   );
   router.patch(

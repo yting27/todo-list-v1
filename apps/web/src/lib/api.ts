@@ -125,7 +125,10 @@ export const api = {
     request<TodoList>(`/workspaces/${workspaceId}/todos?${query.toString()}`),
   /** Fetches a single todo. */
   getTodo: (workspaceId: string, todoId: string) =>
-    request<Todo>(`/workspaces/${workspaceId}/todos/${todoId}`),
+    request<Todo>(`/workspaces/${workspaceId}/todos/${todoId}`, {
+      // Dependency changes do not increment this TODO's version-based ETag.
+      cache: "no-store",
+    }),
   /** Creates a new todo. */
   createTodo: (workspaceId: string, input: TodoInput) =>
     request<Todo>(`/workspaces/${workspaceId}/todos`, {
